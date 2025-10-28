@@ -33,7 +33,7 @@ function App() {
   useEffect(() => {
     const fetchMedicamentos = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/medicamentos');
+        const response = await fetch('https://cuidarmed-backend.onrender.com/api/medicamentos');
         if (!response.ok) {
           throw new Error('La respuesta del servidor no fue OK');
         }
@@ -110,7 +110,7 @@ function App() {
 
     // El resto de la lógica de API es la misma
     try {
-      const response = await fetch('http://localhost:3000/api/tomas', {
+      const response = await fetch('https://cuidarmed-backend.onrender.com/api/tomas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ medicamentoId: id }),
@@ -162,7 +162,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/medicamentos/${id}`, {
+      const response = await fetch(`https://cuidarmed-backend.onrender.com/api/medicamentos/${id}`, {
         method: 'DELETE',
       });
 

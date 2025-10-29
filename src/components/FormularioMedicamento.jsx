@@ -54,8 +54,8 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
 
     // Definimos el método (POST o PUT) y la URL
     const url = modoEdicion 
-      ? `https://cuidarmed-backend.onrender.com/api/medicamentos/${medicamentoActual._id}`
-      : 'https://cuidarmed-backend.onrender.com/api/medicamentos';
+      ? `https://cuidar-med-backend.onrender.com/api/medicamentos/${medicamentoActual._id}`
+      : 'https://cuidar-med-backend.onrender.com/api/medicamentos';
       
     const method = modoEdicion ? 'PUT' : 'POST';
 

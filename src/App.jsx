@@ -1,9 +1,9 @@
 // src/App.jsx
 
 // 1. [NUEVO] Importamos 'useRef' para manejar el audio
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 //import FormularioMedicamento from './components/FormularioMedicamento';
-import ModalAlarma from './components/ModalAlarma'; // <-- 1. [NUEVO] Importamos el Modal
+
 // [NUEVO] Importamos el formulario
 import FormularioMedicamento from './components/FormularioMedicamento';
 
@@ -13,126 +13,48 @@ import FormularioMedicamento from './components/FormularioMedicamento';
 function App() {
   const [medicamentos, setMedicamentos] = useState([]);
   const [error, setError] = useState(null);
-  const [alarmaActiva, setAlarmaActiva] = useState(null);
-
-  // [NUEVO] Estados para controlar las alarmas ya confirmadas
-  // Guardamos el último minuto que revisamos
-  const [ultimoMinutoRevisado, setUltimoMinutoRevisado] = useState(null);
-  // Guardamos los IDs de las alarmas que ya confirmamos en este minuto
-  const [idsConfirmadosEnMinuto, setIdsConfirmadosEnMinuto] = useState([]);
 
   const [medicamentoAEditar, setMedicamentoAEditar] = useState(null);
 
-  // 3. [NUEVO] Referencia al elemento de audio
-  // Usamos useRef para poder darle "play" o "pause" desde código
-  const audioRef = useRef(null);
-
   // --- LÓGICA DE DATOS ---
 
-  // Este useEffect (fetchMedicamentos) no cambia
+  // Este useEffect se encarga de buscar los medicamentos
   useEffect(() => {
-    const fetchMedicamentos = async () => {
-      try {
-        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos');
-        if (!response.ok) {
-          throw new Error('La respuesta del servidor no fue OK');
-        }
-        const data = await response.json();
-        setMedicamentos(data);
-      } catch (err) {
-        console.error("Error al buscar medicamentos:", err);
-        setError(err.message);
-      }
-    };
-    fetchMedicamentos();
-  }, []);
-
-
-  // 4. [NUEVO] El "VIGILANTE" - Este es el corazón de las alarmas
-  useEffect(() => {
-    // Inicia un intervalo que se ejecuta cada segundo
-    const intervalId = setInterval(() => {
-      // Obtenemos la hora y minuto actual
-      const ahora = new Date();
-      const horaActual = ahora.getHours().toString().padStart(2, '0');
-      const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
-      const tiempoActual = `${horaActual}:${minutoActual}`; // Formato "HH:MM"
-
-      // [NUEVO] Si el minuto cambió, reiniciamos la lista de "confirmados"
-      if (tiempoActual !== ultimoMinutoRevisado) {
-        setUltimoMinutoRevisado(tiempoActual);
-        setIdsConfirmadosEnMinuto([]); // Limpiamos la lista
-      }
-
-      // Si ya hay una alarma sonando, no hacemos nada.
-      if (alarmaActiva) {
-        return;
-      }
-
-      // [MODIFICADO] Buscamos un medicamento que:
-      // 1. Tenga un horario que coincida
-      // 2. NO esté en nuestra lista de confirmados de este minuto
-      const medicamentoQueSuena = medicamentos.find(med =>
-        med.horarios.includes(tiempoActual) && 
-        !idsConfirmadosEnMinuto.includes(med._id) // <--- ¡La lógica clave!
-      );
-
-      // Si encontramos uno...
-      if (medicamentoQueSuena) {
-        setAlarmaActiva(medicamentoQueSuena); // ¡Activamos la alarma!
-        audioRef.current?.play();
-      }
-
-    }, 1000); // Se sigue ejecutando cada segundo
-
-    return () => clearInterval(intervalId);
-
-  // [MODIFICADO] Añadimos las nuevas dependencias al useEffect
-  }, [medicamentos, alarmaActiva, ultimoMinutoRevisado, idsConfirmadosEnMinuto]);
-
-
-  // --- FUNCIONES DE MANEJO (Handlers) ---
-
-  // 5. [MODIFICADO] handleConfirmarToma
-  const handleConfirmarToma = async (id) => {
-    if (medicamentoAEditar) return;
-    
-    // Detenemos la alarma
-    if (alarmaActiva) {
-      audioRef.current?.pause();
-      audioRef.current.currentTime = 0;
-      setAlarmaActiva(null);
-    }
-
-    // [NUEVO] Añadimos el ID de este medicamento a la lista de "confirmados"
-    // para que el vigilante no lo vuelva a encontrar en este minuto.
-    setIdsConfirmadosEnMinuto(prevIds => [...prevIds, id]);
-
-    // El resto de la lógica de API es la misma
+  // 1. Definimos la función que busca los datos
+  const fetchMedicamentos = async () => {
     try {
-      const response = await fetch('https://cuidar-med-backend.onrender.com/api/tomas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ medicamentoId: id }),
-      });
+      // Usamos la URL correcta (la de 'cuidar-med-backend')
+      const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos');
 
       if (!response.ok) {
-        throw new Error('Error al confirmar la toma');
+        throw new Error('La respuesta del servidor no fue OK');
       }
 
-      const medicamentoActualizado = await response.json();
-
-      setMedicamentos(medicamentosAnteriores =>
-        medicamentosAnteriores.map(med =>
-          med._id === id ? medicamentoActualizado : med
-        )
-      );
+      const data = await response.json();
+      setMedicamentos(data); // ¡Guardamos los datos en nuestra "memoria"!
 
     } catch (err) {
-      console.error("Error al confirmar toma:", err);
+      console.error("Error al buscar medicamentos:", err);
       setError(err.message);
     }
   };
+
+  // 2. Buscamos los datos la PRIMERA VEZ (cuando carga la página)
+  fetchMedicamentos();
+
+  // 3. [NUEVO] Creamos un "poller" (un vigilante) que busca
+  // los datos cada 30 segundos (30000 milisegundos)
+  const intervalId = setInterval(() => {
+    console.log("Auto-actualizando lista de medicamentos...");
+    fetchMedicamentos();
+  }, 30000);
+
+  // 4. Limpiamos el intervalo cuando el componente se "desmonta"
+  return () => clearInterval(intervalId);
+
+}, []); // El [] vacío asegura que esto se configure UNA SOLA VEZ
+
+  // --- FUNCIONES DE MANEJO (Handlers) ---
 
   // [MODIFICADO] handleMedicamentoAgregado - Ahora se llama onFormularioSubmit
   // Esta función ahora maneja tanto "Crear" como "Actualizar"
@@ -184,28 +106,6 @@ function App() {
   // --- RENDERIZADO (Lo que se dibuja) ---
   return (
     <div className="App">
-
-      {/* 6. [NUEVO] El modal de la alarma
-          Esto es un "renderizado condicional":
-          Solo si 'alarmaActiva' NO es null, se mostrará el modal. */}
-      {alarmaActiva && (
-        <ModalAlarma 
-          medicamento={alarmaActiva} 
-          // Le pasamos la función para que el botón del modal la ejecute
-          onConfirmar={() => handleConfirmarToma(alarmaActiva._id)} 
-        />
-      )}
-
-      {/* 7. [NUEVO] El elemento de audio
-          Está oculto ('hidden') pero nuestra 'audioRef' lo puede controlar.
-          'loop' hace que suene sin parar.
-          Uso un sonido genérico de Google, puedes cambiarlo. */}
-      <audio 
-        ref={audioRef} 
-        src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" 
-        loop 
-        hidden 
-      />
       
       <h1>Panel de Control de Medicamentos</h1>
       
@@ -238,10 +138,6 @@ function App() {
               <td>{med.stockMinimo}</td>
               <td>{med.horarios.join(', ')}</td>
               <td>
-                <button onClick={() => handleConfirmarToma(med._id)} disabled={!!medicamentoAEditar}>
-                  Confirmar Toma
-                </button>
-
                 {/* [NUEVOS BOTONES] */}
                 <button 
                   className="btn-editar" 

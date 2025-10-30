@@ -224,3 +224,37 @@ button:hover {
   color: #d9534f;
   border: 1px solid #d9534f;
 }
+
+/* --- ESTILOS RESPONSIVE (PARA CELULARES) --- */
+/* Estas reglas se aplican a pantallas de 768px de ancho o menos */
+@media (max-width: 768px) {
+
+  /* 1. Arreglo del Formulario */
+  /* Le decimos al grid del formulario que pase de 2 columnas a 1 */
+  .grid-formulario {
+    grid-template-columns: 1fr; 
+  }
+
+  /* 2. Arreglo de la Tabla */
+  /* Hacemos que la tabla pueda "scrollear" de lado a lado
+     si no entra en la pantalla, en lugar de romperse. */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto; /* ¡Esta es la magia! Permite scroll horizontal */
+    white-space: nowrap; /* Evita que el texto de las celdas se parta */
+  }
+
+  /* 3. (Opcional) Ajustes de padding para pantallas chicas */
+  body {
+    padding: 0.5rem; /* Menos espacio en los bordes */
+  }
+  .App {
+    padding: 1rem; /* Menos padding en la tarjeta principal */
+  }
+
+  /* 4. (Opcional) Botones del formulario en columna */
+  .botones-formulario {
+    flex-direction: column;
+  }
+}

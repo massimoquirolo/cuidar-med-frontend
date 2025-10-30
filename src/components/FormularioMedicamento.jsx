@@ -149,7 +149,7 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
         <label htmlFor="hora">Horarios de Toma (HH:MM):</label>
         <div className="input-horarios">
           <input type="time" id="hora" value={horaActual} onChange={(e) => setHoraActual(e.target.value)} />
-          <button type-"button" className="btn-anadir-hora" onClick={handleAnadirHora}>
+          <button type="button" className="btn-anadir-hora" onClick={handleAnadirHora}>
             Añadir Hora
           </button>
         </div>

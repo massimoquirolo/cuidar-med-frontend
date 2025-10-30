@@ -80,3 +80,147 @@ button:hover {
 .btn-cancelar:hover {
   background-color: #555;
 }
+
+.formulario-medicamento {
+  margin-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+  padding-top: 1.5rem;
+  background-color: #fcfcfc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.formulario-medicamento h2 {
+  margin-top: 0;
+}
+
+.grid-formulario {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 columnas */
+  gap: 1.5rem; /* Espacio entre campos */
+}
+
+.campo-formulario {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-formulario label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.campo-formulario input[type="text"],
+.campo-formulario input[type="number"] {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.campo-horarios {
+  margin-top: 1.5rem;
+}
+
+.campo-horarios label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.input-horarios {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.input-horarios input[type="time"] {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.btn-anadir-hora {
+  background-color: #5bc0de;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.btn-anadir-hora:hover {
+  background-color: #31b0d5;
+}
+
+.lista-horarios {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.lista-horarios p {
+  color: #777;
+  font-style: italic;
+}
+
+.horario-pill {
+  background-color: #e9e9e9;
+  border-radius: 15px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.horario-pill button {
+  background-color: #777;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.horario-pill button:hover {
+  background-color: #d9534f;
+}
+
+.botones-formulario {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-guardar {
+  background-color: #2ecc71 !important; /* Importante para sobreescribir estilos viejos */
+}
+.btn-guardar:hover {
+  background-color: #27ae60 !important;
+}
+
+.mensaje-feedback {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.mensaje-feedback.exito {
+  background-color: #e6ffed;
+  color: #27ae60;
+  border: 1px solid #27ae60;
+}
+.mensaje-feedback.error {
+  background-color: #ffe6e6;
+  color: #d9534f;
+  border: 1px solid #d9534f;
+}

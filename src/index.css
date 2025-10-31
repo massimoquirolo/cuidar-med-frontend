@@ -309,3 +309,29 @@ th button:hover {
   margin-top: 0.5rem;
 }
 
+/* --- Estilos para Botón de Historial --- */
+.btn-toggle-historial {
+  background-color: #5bc0de;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+.btn-toggle-historial:hover {
+  background-color: #31b0d5;
+}
+
+/* --- Estilos para Tabla de Historial --- */
+.historial-container {
+  margin-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+  padding-top: 1.5rem;
+}
+.historial-container h2 {
+  margin-top: 0;
+}
+

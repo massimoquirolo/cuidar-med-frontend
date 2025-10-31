@@ -18,6 +18,9 @@ function App() {
   // [NUEVO] Estado para guardar el orden. Por defecto, ordenamos por nombre A-Z
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
 
+  const [historial, setHistorial] = useState([]);
+  const [mostrarHistorial, setMostrarHistorial] = useState(false); // Para el botón
+
   // --- LÓGICA DE DATOS ---
 
   // Este useEffect se encarga de buscar los medicamentos
@@ -46,6 +49,13 @@ function App() {
       const data = await response.json();
       setMedicamentos(data); // ¡Guardamos los datos!
       setError(null); // ¡Éxito! Limpiamos cualquier error anterior
+
+      // Buscamos también el historial
+      const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial');
+      if (responseHistorial.ok) {
+        const dataHistorial = await responseHistorial.json();
+        setHistorial(dataHistorial);
+      }
 
     } catch (err) {
       console.error("Error al buscar medicamentos:", err);
@@ -173,6 +183,10 @@ const requestSort = (key) => {
     <div className="App">
       <h1>Panel de Control de Medicamentos</h1>
 
+      <button onClick={() => setMostrarHistorial(!mostrarHistorial)} className="btn-toggle-historial">
+        {mostrarHistorial ? 'Ocultar Historial' : 'Mostrar Historial de Movimientos'}
+      </button>
+
       {/* --- NUEVA LÓGICA DE CARGA Y ERROR --- */}
 
       {/* 1. Si está en la CARGA INICIAL... */}
@@ -274,6 +288,36 @@ const requestSort = (key) => {
         </>
       )}
       {/* --- FIN DE LA LÓGICA DE CARGA --- */}
+
+      {/* [NUEVA TABLA DE HISTORIAL] */}
+      {/* Solo se muestra si mostrarHistorial es true */}
+      {mostrarHistorial && !isLoading && (
+        <div className="historial-container">
+          <h2>Últimos Movimientos de Stock</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Medicamento</th>
+                <th>Movimiento</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historial.map(log => (
+                <tr key={log._id}>
+                  <td>{new Date(log.fecha).toLocaleString('es-AR')}</td>
+                  <td>{log.medicamentoNombre}</td>
+                  <td style={{ color: log.movimiento > 0 ? 'green' : '#d9534f', fontWeight: 'bold' }}>
+                    {log.movimiento > 0 ? `+${log.movimiento}` : log.movimiento}
+                  </td>
+                  <td>{log.tipo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

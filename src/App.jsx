@@ -1,7 +1,6 @@
 // src/App.jsx
 
-// 1. [NUEVO] Importamos 'useRef' para manejar el audio
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 //import FormularioMedicamento from './components/FormularioMedicamento';
 
 // [NUEVO] Importamos el formulario
@@ -15,6 +14,9 @@ function App() {
   const [error, setError] = useState(null);
 
   const [medicamentoAEditar, setMedicamentoAEditar] = useState(null);
+
+  // [NUEVO] Estado para guardar el orden. Por defecto, ordenamos por nombre A-Z
+  const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
 
   // --- LÓGICA DE DATOS ---
 
@@ -53,6 +55,46 @@ function App() {
   return () => clearInterval(intervalId);
 
 }, []); // El [] vacío asegura que esto se configure UNA SOLA VEZ
+
+  // [NUEVO] Lógica de Ordenamiento
+  // 'useMemo' es un "hook" de React que memoriza la lista ordenada
+  // y solo la vuelve a calcular si 'medicamentos' o 'sortConfig' cambian.
+  const sortedMedicamentos = useMemo(() => {
+    let sortableMeds = [...medicamentos]; // Creamos una copia
+
+    if (sortConfig.key !== null) {
+      sortableMeds.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Tratamiento especial para strings (para que 'Z' no venga antes de 'a')
+        if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+
+        // La lógica de comparación
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0; // Son iguales
+      });
+    }
+    return sortableMeds;
+  }, [medicamentos, sortConfig]); // Dependencias: re-ordenar si esto cambia
+
+// [NUEVO] Función que se llamará al hacer clic en una cabecera
+const requestSort = (key) => {
+  let direction = 'ascending';
+  // Si hacemos clic en la misma columna, invertimos el orden
+  if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+    direction = 'descending';
+  }
+  setSortConfig({ key, direction });
+};
 
   // --- FUNCIONES DE MANEJO (Handlers) ---
 
@@ -115,16 +157,29 @@ function App() {
       <table>
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Dosis</th>
-            <th>Stock Actual</th>
+            <th>
+              {/* Botón para ordenar por Nombre */}
+              <button type="button" onClick={() => requestSort('nombre')}>
+                Nombre 
+                {/* Símbolo de flecha 🔼 🔽 */}
+                {sortConfig.key === 'nombre' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+              </button>
+            </th>
+            <th>Dosis</th> {/* Dejamos este sin ordenar */}
+            <th>
+              {/* Botón para ordenar por Stock */}
+              <button type="button" onClick={() => requestSort('stockActual')}>
+                Stock Actual
+                {sortConfig.key === 'stockActual' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+              </button>
+            </th>
             <th>Stock Mínimo</th>
             <th>Horarios</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {medicamentos.map(med => (
+          {sortedMedicamentos.map(med => (
             <tr key={med._id}>
               <td>{med.nombre}</td>
               <td>{med.dosis}</td>

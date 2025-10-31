@@ -7,6 +7,7 @@ const ESTADO_INICIAL = {
   dosis: '',
   stockActual: 0,
   stockMinimo: 5,
+  fechaVencimiento: ''
 };
 
 function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancelarEdicion }) {
@@ -26,26 +27,33 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
 
   const modoEdicion = !!medicamentoActual;
 
-  // Efecto para rellenar el formulario cuando se entra en modo edición
   useEffect(() => {
-    // Limpiamos mensajes viejos
-    setMensaje(null);
+  setMensaje(null);
 
-    if (modoEdicion) {
-      setFormData({
-        nombre: medicamentoActual.nombre,
-        dosis: medicamentoActual.dosis,
-        stockActual: medicamentoActual.stockActual,
-        stockMinimo: medicamentoActual.stockMinimo,
-      });
-      // El 'horarios' (que era un string) ahora es un array
-      setHorarios(medicamentoActual.horarios); 
-    } else {
-      // Reseteamos todo
-      setFormData(ESTADO_INICIAL);
-      setHorarios([]);
+  if (modoEdicion) {
+
+    // [NUEVA LÓGICA DE FECHA]
+    // El input "date" necesita un formato "YYYY-MM-DD"
+    // La base de datos nos da una fecha completa (ISO String) o null
+    let fechaParaInput = '';
+    if (medicamentoActual.fechaVencimiento) {
+      // Convertimos '2025-12-31T00:00:00.000Z' a '2025-12-31'
+      fechaParaInput = new Date(medicamentoActual.fechaVencimiento).toISOString().split('T')[0];
     }
-  }, [medicamentoActual, modoEdicion]);
+
+    setFormData({
+      nombre: medicamentoActual.nombre,
+      dosis: medicamentoActual.dosis,
+      stockActual: medicamentoActual.stockActual,
+      stockMinimo: medicamentoActual.stockMinimo,
+      fechaVencimiento: fechaParaInput // <-- AÑADIDO
+    });
+    setHorarios(medicamentoActual.horarios);
+  } else {
+    setFormData(ESTADO_INICIAL); // Esto ya limpia la fecha
+    setHorarios([]);
+  }
+}, [medicamentoActual, modoEdicion]);
 
   
   // Manejador para los inputs de texto/número
@@ -82,7 +90,13 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
       return;
     }
 
-    const datosAEnviar = { ...formData, horarios: horarios }; // Ya es un array
+    const fechaAEnviar = formData.fechaVencimiento === '' ? null : formData.fechaVencimiento;
+
+    const datosAEnviar = { 
+      ...formData, 
+      horarios: horarios,
+      fechaVencimiento: fechaAEnviar // <-- AÑADIDO
+    };
 
     const url = modoEdicion 
       ? `https://cuidar-med-backend.onrender.com/api/medicamentos/${medicamentoActual._id}`
@@ -141,6 +155,12 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
         <div className="campo-formulario">
           <label htmlFor="stockMinimo">Aviso de Stock Mínimo:</label>
           <input type="number" name="stockMinimo" id="stockMinimo" value={formData.stockMinimo} onChange={handleChange} min="1" required />
+        </div>
+
+        {/* [NUEVO CAMPO DE FECHA] */}
+        <div className="campo-formulario">
+          <label htmlFor="fechaVencimiento">Fecha de Vencimiento (Opcional):</label>
+          <input type="date" name="fechaVencimiento" id="fechaVencimiento" value={formData.fechaVencimiento} onChange={handleChange} />
         </div>
       </div>
 

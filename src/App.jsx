@@ -89,6 +89,32 @@ function App() {
 
 }, []); // El [] vacío asegura que esto se configure UNA SOLA VEZ
 
+  // [NUEVA FUNCIÓN AYUDANTE]
+  // Nos dice si una fecha está vencida o próxima a vencer
+  const getEstiloVencimiento = (fechaVencimiento) => {
+    if (!fechaVencimiento) {
+      return 'vencimiento-normal'; // No hay fecha, no hacemos nada
+    }
+
+    const hoy = new Date();
+    const fechaVenc = new Date(fechaVencimiento);
+    const fechaLimite = new Date();
+    fechaLimite.setDate(hoy.getDate() + 30); // Hoy + 30 días
+
+    // Reseteamos las horas para comparar solo días
+    hoy.setHours(0, 0, 0, 0);
+    fechaVenc.setHours(0, 0, 0, 0);
+    fechaLimite.setHours(0, 0, 0, 0);
+
+    if (fechaVenc < hoy) {
+      return 'vencimiento-vencido'; // ¡YA ESTÁ VENCIDO!
+    }
+    if (fechaVenc <= fechaLimite) {
+      return 'vencimiento-por-vencer'; // Por vencer en 30 días
+    }
+    return 'vencimiento-normal'; // Está OK
+  };
+
   // [NUEVO] Lógica de Ordenamiento
   // 'useMemo' es un "hook" de React que memoriza la lista ordenada
   // y solo la vuelve a calcular si 'medicamentos' o 'sortConfig' cambian.
@@ -229,6 +255,7 @@ const requestSort = (key) => {
                 </th>
                 <th>Stock Mínimo</th>
                 <th>Horarios</th>
+                <th>Vencimiento</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -255,6 +282,14 @@ const requestSort = (key) => {
                   
                   {/* Celda Horarios */}
                   <td>{med.horarios.join(', ')}</td>
+
+                  {/* [NUEVA CELDA DE VENCIMIENTO] */}
+                  <td className={getEstiloVencimiento(med.fechaVencimiento)}>
+                    {med.fechaVencimiento 
+                      ? new Date(med.fechaVencimiento).toLocaleDateString('es-AR') 
+                      : 'N/A'
+                    }
+                  </td>
                   
                   {/* Celda Acciones (SIN el botón "Confirmar Toma") */}
                   <td>

@@ -335,3 +335,28 @@ th button:hover {
   margin-top: 0;
 }
 
+/* --- Estilos para Campo de Fecha --- */
+.campo-formulario input[type="date"] {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit; /* Para que tome la misma letra */
+}
+
+/* --- Estilos para Alertas de Vencimiento en Tabla --- */
+.vencimiento-normal {
+  color: inherit;
+}
+
+.vencimiento-por-vencer {
+  color: #f0ad4e; /* Naranja (como un 'warning') */
+  font-weight: bold;
+}
+
+.vencimiento-vencido {
+  color: #d9534f; /* Rojo (como un 'danger') */
+  font-weight: bold;
+  text-decoration: line-through; /* Tachado */
+}
+

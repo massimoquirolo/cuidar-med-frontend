@@ -285,3 +285,27 @@ th button {
 th button:hover {
   color: #3498db; /* Un color azul al pasar el mouse */
 }
+
+/* --- Estilos para Mensaje de Carga (Cold Start) --- */
+
+.mensaje-feedback.loading {
+  background-color: #e6f7ff;
+  color: #3498db;
+  border: 1px solid #3498db;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
+.mensaje-feedback.loading p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.mensaje-feedback.loading p:last-child {
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+

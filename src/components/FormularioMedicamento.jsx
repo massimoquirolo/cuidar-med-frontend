@@ -1,5 +1,7 @@
 // src/components/FormularioMedicamento.jsx
 import { useState, useEffect } from 'react';
+// [NUEVO] Importamos 'toast'
+import toast from 'react-hot-toast';
 
 const ESTADO_INICIAL = {
   nombre: '',
@@ -14,13 +16,16 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
   const [formData, setFormData] = useState(ESTADO_INICIAL);
   const [horarios, setHorarios] = useState([]);
   const [horaActual, setHoraActual] = useState('09:00');
-  const [mensaje, setMensaje] = useState(null);
+  
+  // [ELIMINADO] Ya no necesitamos el 'useState' para 'mensaje'
+  // const [mensaje, setMensaje] = useState(null); 
+  
   const [isLoading, setIsLoading] = useState(false);
 
   const modoEdicion = !!medicamentoActual;
 
   useEffect(() => {
-    setMensaje(null);
+    // setMensaje(null); <-- [ELIMINADO]
     if (modoEdicion) {
       let fechaParaInput = '';
       if (medicamentoActual.fechaVencimiento) {
@@ -61,11 +66,12 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensaje(null);
+    // setMensaje(null); <-- [ELIMINADO]
     setIsLoading(true);
 
     if (horarios.length === 0) {
-      setMensaje({ tipo: 'error', texto: 'Debes añadir al menos un horario.' });
+      // [MODIFICADO] Usamos toast
+      toast.error('Debes añadir al menos un horario.'); 
       setIsLoading(false);
       return;
     }
@@ -101,14 +107,16 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
       }
       
       onSubmitCompletado(medicamentoGuardado);
-      
       setFormData(ESTADO_INICIAL);
       setHorarios([]);
-      setMensaje({ tipo: 'exito', texto: modoEdicion ? '¡Actualizado con éxito!' : '¡Guardado con éxito!' });
+      
+      // [MODIFICADO] Usamos toast
+      toast.success(modoEdicion ? '¡Actualizado con éxito!' : '¡Guardado con éxito!');
 
     } catch (err) {
       console.error("Error al guardar:", err);
-      setMensaje({ tipo: 'error', texto: err.message });
+      // [MODIFICADO] Usamos toast
+      toast.error(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +127,7 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
       <h2>{modoEdicion ? 'Editar Medicamento' : 'Agregar Nuevo Medicamento'}</h2>
       
       <fieldset disabled={isLoading}>
+        {/* ... (Todo tu formulario: grid, campo-horarios, etc. no cambia) ... */}
         <div className="grid-formulario">
           <div className="campo-formulario">
             <label htmlFor="nombre">Nombre del Medicamento:</label>
@@ -161,7 +170,6 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
               horarios.map(h => (
                 <span key={h} className="horario-pill">
                   {h}
-                  {/* --- ¡AQUÍ ESTÁ LA CORRECCIÓN! --- */}
                   <button type="button" onClick={() => handleQuitarHora(h)}>×</button>
                 </span>
               ))
@@ -182,14 +190,10 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
         )}
       </div>
 
-      {mensaje && (
-        <p className={`mensaje-feedback ${mensaje.tipo === 'error' ? 'error' : 'exito'}`}>
-          {mensaje.texto}
-        </p>
-      )}
+      {/* [ELIMINADO] El bloque de 'mensaje' ya no es necesario */}
+      
     </form>
   );
 }
 
 export default FormularioMedicamento;
-

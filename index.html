@@ -1,13 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- 1. El Favicon que creamos -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>cuidar-med-frontend</title>
+    <title>CuidarMed - Panel de Control</title>
+
+    <!-- --- LÍNEAS PWA --- -->
+    
+    <!-- 2. Enlace al Manifiesto -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- 3. Color de la barra de estado en móviles -->
+    <meta name="theme-color" content="#3498db" />
+
+    <!-- 4. Ícono para Apple (iOS) -->
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- --- FIN DE LÍNEAS PWA --- -->
+
   </head>
   <body>
+    <!-- Aquí es donde React "dibuja" toda tu aplicación -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+

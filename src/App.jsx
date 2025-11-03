@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import FormularioMedicamento from './components/FormularioMedicamento';
-import LoginForm from './components/LoginForm'; // <-- 1. Importamos el Login
+import LoginForm from './components/LoginForm';
+// [NUEVO] Importamos el Toaster y el toast
+import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 function App() {
   const [medicamentos, setMedicamentos] = useState([]);
@@ -12,23 +15,16 @@ function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
   const [historial, setHistorial] = useState([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
-
-  // --- 2. Lógica de Autenticación ---
   const [token, setToken] = useState(localStorage.getItem('authToken'));
 
   const handleLogout = () => {
     setToken(null);
     localStorage.removeItem('authToken');
-    // Limpiamos los datos para que no se vean al volver a loguear
     setMedicamentos([]);
     setHistorial([]);
   };
-  // --- Fin Auth ---
 
-  // --- Lógica de Datos ---
   useEffect(() => {
-    
-    // [MODIFICADO] Si no hay "pase", no hacemos nada.
     if (!token) {
       setIsLoading(false);
       setMedicamentos([]);
@@ -40,24 +36,12 @@ function App() {
       if (isInitial) setIsLoading(true);
       
       try {
-        // [MODIFICADO] Añadimos el "pase" (token) a todas las peticiones
-        const commonHeaders = {
-          'Authorization': `Bearer ${token}`
-        };
+        const commonHeaders = { 'Authorization': `Bearer ${token}` };
+        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { headers: commonHeaders });
 
-        // Petición 1: Medicamentos
-        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { 
-          headers: commonHeaders 
-        });
-
-        // Chequeo de seguridad: si el token es malo, cerramos sesión
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Token inválido o expirado');
-        }
+        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
         if (!response.ok) {
-          if (response.status >= 500 && response.status <= 599) {
-            throw new Error('El servidor está despertando... (Error 50x)');
-          }
+          if (response.status >= 500 && response.status <= 599) throw new Error('El servidor está despertando... (Error 50x)');
           throw new Error('La respuesta del servidor no fue OK');
         }
         
@@ -65,11 +49,7 @@ function App() {
         setMedicamentos(data);
         setError(null);
 
-        // Petición 2: Historial
-        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { 
-          headers: commonHeaders 
-        });
-
+        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: commonHeaders });
         if (responseHistorial.ok) {
           const dataHistorial = await responseHistorial.json();
           setHistorial(dataHistorial);
@@ -77,10 +57,9 @@ function App() {
 
       } catch (err) {
         console.error("Error al buscar datos:", err);
-        
         if (err.message === 'Token inválido o expirado') {
           setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-          handleLogout(); // Forzamos el cierre de sesión
+          handleLogout();
         } else if (isInitial) {
           setError("Error al cargar datos. El servidor puede estar 'despertando'. Se reintentará automáticamente...");
         }
@@ -89,16 +68,10 @@ function App() {
       }
     };
 
-    fetchMedicamentos(true); // Carga inicial
-    
-    const intervalId = setInterval(() => {
-      console.log("Auto-actualizando lista de medicamentos...");
-      fetchMedicamentos(false);
-    }, 30000);
-
+    fetchMedicamentos(true);
+    const intervalId = setInterval(() => { fetchMedicamentos(false); }, 30000);
     return () => clearInterval(intervalId);
-
-  }, [token]); // <-- 3. El 'useEffect' ahora DEPENDE del token
+  }, [token]);
 
   
   // --- Funciones Helpers (Sin cambios) ---
@@ -156,30 +129,29 @@ function App() {
     if (!window.confirm("¿Estás seguro de que quieres eliminar este medicamento?")) return;
 
     try {
-      // [MODIFICADO] Añadimos el "pase" (token) al borrar
       const response = await fetch(`https://cuidar-med-backend.onrender.com/api/medicamentos/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!response.ok) {
-        // Chequeo de seguridad
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Token inválido o expirado');
-        }
+        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
         throw new Error('Error al eliminar');
       }
 
       setMedicamentos(meds => meds.filter(med => med._id !== id));
+      
+      // [NUEVO] Usamos un toast de éxito
+      toast.success('Medicamento eliminado');
+
     } catch (err) {
       console.error("Error al eliminar:", err);
       if (err.message === 'Token inválido o expirado') {
         setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
         handleLogout();
       } else {
-        setError(err.message);
+        // [NUEVO] Usamos un toast de error en lugar de setError
+        toast.error(err.message);
       }
     }
   };
@@ -188,16 +160,21 @@ function App() {
   return (
     <div className="App">
       
-      {/* --- 4. LÓGICA DE VISTA --- */}
+      {/* [NUEVO] Este componente es el que "dibuja" los toasts */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+      />
 
-      {/* Si NO hay "pase" (token), mostramos el Login */}
       {!token ? (
-        
         <LoginForm setToken={setToken} />
-        
       ) : (
-        
-        /* Si SÍ hay "pase", mostramos la app completa */
         <>
           <div className="header-bar">
             <h1>Panel de Control de Medicamentos</h1>
@@ -208,7 +185,6 @@ function App() {
             {mostrarHistorial ? 'Ocultar Historial' : 'Mostrar Historial de Movimientos'}
           </button>
 
-          {/* Lógica de Carga y Error */}
           {isLoading && (
             <div className="mensaje-feedback loading">
               <p>Cargando medicamentos...</p>
@@ -221,10 +197,10 @@ function App() {
             </div>
           )}
 
-          {/* Contenido Principal de la App */}
           {!isLoading && (
             <> 
               <table>
+                {/* ... (Tu <thead> y <tbody> de la tabla principal no cambian) ... */}
                 <thead>
                   <tr>
                     <th>
@@ -295,7 +271,7 @@ function App() {
             </>
           )}
 
-          {/* Tabla de Historial */}
+          {/* ... (Tu <table> de historial no cambia) ... */}
           {mostrarHistorial && !isLoading && (
             <div className="historial-container">
               <h2>Últimos Movimientos de Stock</h2>

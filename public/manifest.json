@@ -1,0 +1,16 @@
+{
+  "name": "CuidarMed - Panel",
+  "short_name": "CuidarMed",
+  "description": "Panel de control de stock de medicamentos.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3498db",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ]
+}

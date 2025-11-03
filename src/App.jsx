@@ -3,28 +3,40 @@
 import { useState, useEffect, useMemo } from 'react';
 import FormularioMedicamento from './components/FormularioMedicamento';
 import LoginForm from './components/LoginForm';
-// [NUEVO] Importamos el Toaster y el toast
+// 1. Importamos el Toaster y el toast
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
+// 2. Importamos el nuevo gráfico
+import DashboardChart from './components/DashboardChart';
 
 function App() {
+  // Estados de datos
   const [medicamentos, setMedicamentos] = useState([]);
+  const [historial, setHistorial] = useState([]);
+  
+  // Estados de UI (interfaz de usuario)
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [medicamentoAEditar, setMedicamentoAEditar] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
-  const [historial, setHistorial] = useState([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  
+  // Estado de Autenticación
   const [token, setToken] = useState(localStorage.getItem('authToken'));
 
+  // --- Funciones de Autenticación ---
   const handleLogout = () => {
     setToken(null);
     localStorage.removeItem('authToken');
+    // Limpiamos los datos al cerrar sesión
     setMedicamentos([]);
     setHistorial([]);
   };
 
+  // --- Lógica Principal de Carga de Datos ---
   useEffect(() => {
+    
+    // Si no hay "pase" (token), no hacemos nada.
     if (!token) {
       setIsLoading(false);
       setMedicamentos([]);
@@ -32,24 +44,41 @@ function App() {
       return;
     }
 
+    // Función para buscar datos (se usa en la carga inicial y en el refresh)
     const fetchMedicamentos = async (isInitial = false) => {
       if (isInitial) setIsLoading(true);
       
       try {
-        const commonHeaders = { 'Authorization': `Bearer ${token}` };
-        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { headers: commonHeaders });
+        // Añadimos el "pase" (token) a todas las peticiones
+        const commonHeaders = {
+          'Authorization': `Bearer ${token}`
+        };
 
-        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
+        // Petición 1: Medicamentos
+        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { 
+          headers: commonHeaders 
+        });
+
+        // Chequeo de seguridad: si el token es malo, cerramos sesión
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Token inválido o expirado');
+        }
         if (!response.ok) {
-          if (response.status >= 500 && response.status <= 599) throw new Error('El servidor está despertando... (Error 50x)');
+          if (response.status >= 500 && response.status <= 599) {
+            throw new Error('El servidor está despertando... (Error 50x)');
+          }
           throw new Error('La respuesta del servidor no fue OK');
         }
         
         const data = await response.json();
         setMedicamentos(data);
-        setError(null);
+        setError(null); // Limpiamos errores si la carga fue exitosa
 
-        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: commonHeaders });
+        // Petición 2: Historial
+        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { 
+          headers: commonHeaders 
+        });
+
         if (responseHistorial.ok) {
           const dataHistorial = await responseHistorial.json();
           setHistorial(dataHistorial);
@@ -57,10 +86,12 @@ function App() {
 
       } catch (err) {
         console.error("Error al buscar datos:", err);
+        
         if (err.message === 'Token inválido o expirado') {
           setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-          handleLogout();
+          handleLogout(); // Forzamos el cierre de sesión
         } else if (isInitial) {
+          // Solo mostramos error en la carga inicial
           setError("Error al cargar datos. El servidor puede estar 'despertando'. Se reintentará automáticamente...");
         }
       } finally {
@@ -68,19 +99,28 @@ function App() {
       }
     };
 
-    fetchMedicamentos(true);
-    const intervalId = setInterval(() => { fetchMedicamentos(false); }, 30000);
+    fetchMedicamentos(true); // Carga inicial
+    
+    // Auto-refresh cada 30 segundos
+    const intervalId = setInterval(() => {
+      console.log("Auto-actualizando lista de medicamentos...");
+      fetchMedicamentos(false);
+    }, 30000);
+
+    // Limpiamos el intervalo al salir
     return () => clearInterval(intervalId);
-  }, [token]);
+
+  }, [token]); // El 'useEffect' DEPENDE del token
 
   
-  // --- Funciones Helpers (Sin cambios) ---
+  // --- Funciones Helpers (para Vencimiento y Ordenamiento) ---
   const getEstiloVencimiento = (fechaVencimiento) => {
     if (!fechaVencimiento) return 'vencimiento-normal';
     const hoy = new Date();
     const fechaVenc = new Date(fechaVencimiento);
     const fechaLimite = new Date();
     fechaLimite.setDate(hoy.getDate() + 30);
+    // Reseteamos horas para comparar solo días
     hoy.setHours(0, 0, 0, 0);
     fechaVenc.setHours(0, 0, 0, 0);
     fechaLimite.setHours(0, 0, 0, 0);
@@ -115,14 +155,19 @@ function App() {
     setSortConfig({ key, direction });
   };
 
-  // --- Funciones Handlers (Modificadas) ---
+  // --- Funciones Handlers (para Formularios y Botones) ---
   const onFormularioSubmit = (medicamentoGuardado) => {
+    // Esta función la llama el componente 'FormularioMedicamento'
     if (medicamentoAEditar) {
       setMedicamentos(meds => meds.map(med => med._id === medicamentoGuardado._id ? medicamentoGuardado : med));
       setMedicamentoAEditar(null);
     } else {
       setMedicamentos(meds => [...meds, medicamentoGuardado]);
     }
+    // También refrescamos el historial
+    fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setHistorial(data));
   };
 
   const handleEliminar = async (id) => {
@@ -140,9 +185,7 @@ function App() {
       }
 
       setMedicamentos(meds => meds.filter(med => med._id !== id));
-      
-      // [NUEVO] Usamos un toast de éxito
-      toast.success('Medicamento eliminado');
+      toast.success('Medicamento eliminado'); // Notificación Toast
 
     } catch (err) {
       console.error("Error al eliminar:", err);
@@ -150,31 +193,33 @@ function App() {
         setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
         handleLogout();
       } else {
-        // [NUEVO] Usamos un toast de error en lugar de setError
-        toast.error(err.message);
+        toast.error(err.message); // Notificación Toast
       }
     }
   };
 
-  // --- RENDERIZADO (Con lógica de Login) ---
+  // --- RENDERIZADO (Lo que se dibuja en pantalla) ---
   return (
     <div className="App">
       
-      {/* [NUEVO] Este componente es el que "dibuja" los toasts */}
+      {/* Contenedor de Notificaciones Toast */}
       <Toaster 
         position="top-right"
         toastOptions={{
           duration: 3000,
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
+          style: { background: '#333', color: '#fff' },
         }}
       />
 
+      {/* LÓGICA DE VISTA PRINCIPAL: O LOGIN O LA APP */}
+      
       {!token ? (
+        // 1. Si NO hay token, mostramos el Login
         <LoginForm setToken={setToken} />
+      
       ) : (
+        
+        // 2. Si SÍ hay token, mostramos la App
         <>
           <div className="header-bar">
             <h1>Panel de Control de Medicamentos</h1>
@@ -185,6 +230,12 @@ function App() {
             {mostrarHistorial ? 'Ocultar Historial' : 'Mostrar Historial de Movimientos'}
           </button>
 
+          {/* --- AQUÍ VA EL GRÁFICO NUEVO --- */}
+          {!isLoading && !error && (
+            <DashboardChart data={sortedMedicamentos} />
+          )}
+
+          {/* Lógica de Carga y Error */}
           {isLoading && (
             <div className="mensaje-feedback loading">
               <p>Cargando medicamentos...</p>
@@ -197,10 +248,11 @@ function App() {
             </div>
           )}
 
+          {/* Contenido Principal de la App (Tablas y Form) */}
           {!isLoading && (
             <> 
+              {/* --- Tabla Principal de Medicamentos --- */}
               <table>
-                {/* ... (Tu <thead> y <tbody> de la tabla principal no cambian) ... */}
                 <thead>
                   <tr>
                     <th>
@@ -256,13 +308,17 @@ function App() {
                         >
                           Eliminar
                         </button>
-                        {/* Aquí va el botón de Recargar Stock que implementamos */}
+                        {/* Aquí puedes añadir el botón de Recargar Stock 
+                          que implementamos en el Nivel 2. 
+                          Tendrías que añadir la función 'handleRecargarStock' arriba.
+                        */}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
+              {/* --- Formulario de Agregar/Editar --- */}
               <FormularioMedicamento
                 medicamentoActual={medicamentoAEditar}
                 onSubmitCompletado={onFormularioSubmit}
@@ -271,7 +327,7 @@ function App() {
             </>
           )}
 
-          {/* ... (Tu <table> de historial no cambia) ... */}
+          {/* --- Tabla de Historial (Condicional) --- */}
           {mostrarHistorial && !isLoading && (
             <div className="historial-container">
               <h2>Últimos Movimientos de Stock</h2>
@@ -306,3 +362,4 @@ function App() {
 }
 
 export default App;
+

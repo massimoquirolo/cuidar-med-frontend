@@ -415,3 +415,35 @@ th button:hover {
   }
 }
 
+/* --- Estilos para el Gráfico (Dashboard) --- */
+
+.chart-container {
+  width: 100%;
+  height: 400px; /* Le damos una altura fija */
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #fcfcfc;
+}
+
+.chart-container h2 {
+  margin-top: 0;
+  text-align: center;
+  color: #333;
+}
+
+/* Ajuste para que el tooltip (ayuda) del gráfico
+   se vea bien sobre nuestro fondo */
+.recharts-tooltip-wrapper {
+  border-radius: 8px !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recharts-tooltip-label {
+  font-weight: bold;
+  color: #333;
+}
+

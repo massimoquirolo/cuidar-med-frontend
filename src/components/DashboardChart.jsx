@@ -29,29 +29,29 @@ function DashboardChart({ data }) {
   }
 
   return (
-    <div className="chart-container">
+    /* CAMBIO 1: Forzamos la altura del contenedor exterior */
+    <div className="chart-container" style={{ height: '550px' }}>
       <h2>Resumen Visual del Stock</h2>
       
-      {/* CAMBIO 1: Aumentamos la altura total para dar más espacio */}
-      <ResponsiveContainer width="100%" height={500}>
+      {/* CAMBIO 2: Aumentamos la altura total del gráfico interno */}
+      <ResponsiveContainer width="100%" height={550}>
         <BarChart 
           data={data}
           margin={{
             top: 5,
             right: 30,
             left: 0,
-            bottom: 100, // <-- CAMBIO 2: Añadimos más margen inferior para los nombres
+            bottom: 150, // <-- CAMBIO 3: Más margen inferior para los nombres
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           
-          {/* CAMBIO 3: Inclinamos los nombres */}
           <XAxis 
             dataKey="nombre"
             tick={{ fontSize: 12 }} 
             interval={0} 
-            angle={-45}       // <-- Inclinamos el texto
-            textAnchor="end"  // <-- Anclamos el texto al final
+            angle={-45}       
+            textAnchor="end"  
           />
           
           <YAxis />

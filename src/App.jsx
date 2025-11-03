@@ -1,42 +1,37 @@
 // src/App.jsx
 
 import { useState, useEffect, useMemo } from 'react';
+import { Toaster, toast } from 'react-hot-toast'; // Importamos Toaster y toast
 import FormularioMedicamento from './components/FormularioMedicamento';
 import LoginForm from './components/LoginForm';
-// 1. Importamos el Toaster y el toast
-import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
-// 2. Importamos el nuevo gráfico
-import DashboardChart from './components/DashboardChart';
+import DashboardChart from './components/DashboardChart'; // Importamos el Gráfico
 
 function App() {
-  // Estados de datos
   const [medicamentos, setMedicamentos] = useState([]);
-  const [historial, setHistorial] = useState([]);
-  
-  // Estados de UI (interfaz de usuario)
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [medicamentoAEditar, setMedicamentoAEditar] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
+  const [historial, setHistorial] = useState([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
-  
-  // Estado de Autenticación
+
+  // --- Lógica de Autenticación ---
   const [token, setToken] = useState(localStorage.getItem('authToken'));
 
-  // --- Funciones de Autenticación ---
   const handleLogout = () => {
     setToken(null);
     localStorage.removeItem('authToken');
-    // Limpiamos los datos al cerrar sesión
+    // Limpiamos los datos para que no se vean al volver a loguear
     setMedicamentos([]);
     setHistorial([]);
+    toast.success('Sesión cerrada');
   };
+  // --- Fin Auth ---
 
-  // --- Lógica Principal de Carga de Datos ---
+  // --- Lógica de Datos ---
   useEffect(() => {
     
-    // Si no hay "pase" (token), no hacemos nada.
+    // Si no hay "pase", no hacemos nada.
     if (!token) {
       setIsLoading(false);
       setMedicamentos([]);
@@ -44,12 +39,10 @@ function App() {
       return;
     }
 
-    // Función para buscar datos (se usa en la carga inicial y en el refresh)
     const fetchMedicamentos = async (isInitial = false) => {
       if (isInitial) setIsLoading(true);
       
       try {
-        // Añadimos el "pase" (token) a todas las peticiones
         const commonHeaders = {
           'Authorization': `Bearer ${token}`
         };
@@ -59,7 +52,6 @@ function App() {
           headers: commonHeaders 
         });
 
-        // Chequeo de seguridad: si el token es malo, cerramos sesión
         if (response.status === 401 || response.status === 403) {
           throw new Error('Token inválido o expirado');
         }
@@ -71,8 +63,8 @@ function App() {
         }
         
         const data = await response.json();
-        setMedicamentos(data);
-        setError(null); // Limpiamos errores si la carga fue exitosa
+        setMedicamentos(data); // Aquí vienen los datos CON 'diasRestantes'
+        setError(null);
 
         // Petición 2: Historial
         const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { 
@@ -91,7 +83,6 @@ function App() {
           setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
           handleLogout(); // Forzamos el cierre de sesión
         } else if (isInitial) {
-          // Solo mostramos error en la carga inicial
           setError("Error al cargar datos. El servidor puede estar 'despertando'. Se reintentará automáticamente...");
         }
       } finally {
@@ -101,26 +92,23 @@ function App() {
 
     fetchMedicamentos(true); // Carga inicial
     
-    // Auto-refresh cada 30 segundos
     const intervalId = setInterval(() => {
       console.log("Auto-actualizando lista de medicamentos...");
       fetchMedicamentos(false);
     }, 30000);
 
-    // Limpiamos el intervalo al salir
     return () => clearInterval(intervalId);
 
-  }, [token]); // El 'useEffect' DEPENDE del token
+  }, [token]); // El 'useEffect' ahora DEPENDE del token
 
   
-  // --- Funciones Helpers (para Vencimiento y Ordenamiento) ---
+  // --- Funciones Helpers (Sin cambios) ---
   const getEstiloVencimiento = (fechaVencimiento) => {
     if (!fechaVencimiento) return 'vencimiento-normal';
     const hoy = new Date();
     const fechaVenc = new Date(fechaVencimiento);
     const fechaLimite = new Date();
     fechaLimite.setDate(hoy.getDate() + 30);
-    // Reseteamos horas para comparar solo días
     hoy.setHours(0, 0, 0, 0);
     fechaVenc.setHours(0, 0, 0, 0);
     fechaLimite.setHours(0, 0, 0, 0);
@@ -155,19 +143,15 @@ function App() {
     setSortConfig({ key, direction });
   };
 
-  // --- Funciones Handlers (para Formularios y Botones) ---
+  // --- Funciones Handlers (Modificadas) ---
   const onFormularioSubmit = (medicamentoGuardado) => {
-    // Esta función la llama el componente 'FormularioMedicamento'
     if (medicamentoAEditar) {
       setMedicamentos(meds => meds.map(med => med._id === medicamentoGuardado._id ? medicamentoGuardado : med));
       setMedicamentoAEditar(null);
     } else {
       setMedicamentos(meds => [...meds, medicamentoGuardado]);
     }
-    // También refrescamos el historial
-    fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: { 'Authorization': `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(data => setHistorial(data));
+    // La notificación "Toast" ahora se maneja dentro de FormularioMedicamento.jsx
   };
 
   const handleEliminar = async (id) => {
@@ -176,12 +160,18 @@ function App() {
     try {
       const response = await fetch(`https://cuidar-med-backend.onrender.com/api/medicamentos/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
-        throw new Error('Error al eliminar');
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Token inválido o expirado');
+        }
+        throw new Error(data.mensaje || 'Error al eliminar');
       }
 
       setMedicamentos(meds => meds.filter(med => med._id !== id));
@@ -193,33 +183,31 @@ function App() {
         setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
         handleLogout();
       } else {
-        toast.error(err.message); // Notificación Toast
+        setError(err.message);
+        toast.error(err.message); // Notificación Toast de error
       }
     }
   };
 
-  // --- RENDERIZADO (Lo que se dibuja en pantalla) ---
+  // --- RENDERIZADO (Con lógica de Login) ---
   return (
     <div className="App">
-      
       {/* Contenedor de Notificaciones Toast */}
       <Toaster 
         position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: { background: '#333', color: '#fff' },
-        }}
+        reverseOrder={false}
       />
+      
+      {/* --- LÓGICA DE VISTA --- */}
 
-      {/* LÓGICA DE VISTA PRINCIPAL: O LOGIN O LA APP */}
-      
+      {/* Si NO hay "pase" (token), mostramos el Login */}
       {!token ? (
-        // 1. Si NO hay token, mostramos el Login
+        
         <LoginForm setToken={setToken} />
-      
+        
       ) : (
         
-        // 2. Si SÍ hay token, mostramos la App
+        /* Si SÍ hay "pase", mostramos la app completa */
         <>
           <div className="header-bar">
             <h1>Panel de Control de Medicamentos</h1>
@@ -230,7 +218,7 @@ function App() {
             {mostrarHistorial ? 'Ocultar Historial' : 'Mostrar Historial de Movimientos'}
           </button>
 
-          {/* --- AQUÍ VA EL GRÁFICO NUEVO --- */}
+          {/* Solo se muestra si no está cargando y no hay error */}
           {!isLoading && !error && (
             <DashboardChart data={sortedMedicamentos} />
           )}
@@ -248,10 +236,9 @@ function App() {
             </div>
           )}
 
-          {/* Contenido Principal de la App (Tablas y Form) */}
+          {/* Contenido Principal de la App */}
           {!isLoading && (
             <> 
-              {/* --- Tabla Principal de Medicamentos --- */}
               <table>
                 <thead>
                   <tr>
@@ -268,6 +255,16 @@ function App() {
                         {sortConfig.key === 'stockActual' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
                       </button>
                     </th>
+                    
+                    {/* --- NUEVA COLUMNA --- */}
+                    <th>
+                      <button type="button" onClick={() => requestSort('diasRestantes')}>
+                        Días Rest.
+                        {sortConfig.key === 'diasRestantes' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+                      </button>
+                    </th>
+                    {/* --- FIN NUEVA COLUMNA --- */}
+
                     <th>Stock Mínimo</th>
                     <th>Horarios</th>
                     <th>Vencimiento</th>
@@ -281,11 +278,23 @@ function App() {
                       <td>{med.dosis}</td>
                       <td style={{ 
                         color: med.stockActual <= med.stockMinimo ? '#d9534f' : 'inherit',
-                        fontWeight: med.stockActual <= med.stockMinimo ? 'bold' : 'normal'
+                        fontWeight: med.stockActual <= med.stockMinimo ? 'bold' : 'normal',
+                        textAlign: 'center'
                       }}>
                         {med.stockActual}
                       </td>
-                      <td>{med.stockMinimo}</td>
+                      
+                      {/* --- NUEVA CELDA --- */}
+                      <td style={{
+                        color: med.diasRestantes <= 10 ? '#d9534f' : 'inherit',
+                        fontWeight: med.diasRestantes <= 10 ? 'bold' : 'normal',
+                        textAlign: 'center'
+                      }}>
+                        {med.diasRestantes}
+                      </td>
+                      {/* --- FIN NUEVA CELDA --- */}
+
+                      <td style={{ textAlign: 'center' }}>{med.stockMinimo}</td>
                       <td>{med.horarios.join(', ')}</td>
                       <td className={getEstiloVencimiento(med.fechaVencimiento)}>
                         {med.fechaVencimiento 
@@ -308,17 +317,13 @@ function App() {
                         >
                           Eliminar
                         </button>
-                        {/* Aquí puedes añadir el botón de Recargar Stock 
-                          que implementamos en el Nivel 2. 
-                          Tendrías que añadir la función 'handleRecargarStock' arriba.
-                        */}
+                        {/* Aquí va el botón de Recargar Stock */}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              {/* --- Formulario de Agregar/Editar --- */}
               <FormularioMedicamento
                 medicamentoActual={medicamentoAEditar}
                 onSubmitCompletado={onFormularioSubmit}
@@ -327,7 +332,7 @@ function App() {
             </>
           )}
 
-          {/* --- Tabla de Historial (Condicional) --- */}
+          {/* Tabla de Historial */}
           {mostrarHistorial && !isLoading && (
             <div className="historial-container">
               <h2>Últimos Movimientos de Stock</h2>

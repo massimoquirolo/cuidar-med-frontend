@@ -60,7 +60,7 @@ function HistoryChartModal({ medicamento, historial, onClose }) {
                       fontSize={11} 
                       angle={-45}       // Los inclinamos
                       textAnchor="end"  // Alineamos al final
-                      interval={0}      // Forzamos a mostrar todos
+                      // interval={0}      // <-- ¡ELIMINAMOS ESTA LÍNEA! Dejamos que Recharts decida
                     />
                     
                     <YAxis allowDecimals={false} />

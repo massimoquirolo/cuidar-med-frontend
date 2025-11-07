@@ -1,9 +1,9 @@
 // src/components/LoginForm.jsx
 import { useState } from 'react';
 
-// Recibe la función 'setToken' desde App.jsx
 function LoginForm({ setToken }) {
   const [password, setPassword] = useState('');
+  const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -12,11 +12,14 @@ function LoginForm({ setToken }) {
     setError(null);
     setIsLoading(true);
 
-    try {
+    try {      
       const response = await fetch('https://cuidar-med-backend.onrender.com/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: password })
+        body: JSON.stringify({
+          password: password,
+          recordarme: recordarme
+        })
       });
 
       const data = await response.json();
@@ -25,9 +28,7 @@ function LoginForm({ setToken }) {
         throw new Error(data.mensaje || 'Contraseña incorrecta');
       }
 
-      // ¡Éxito! Guardamos el "pase" en el localStorage
       localStorage.setItem('authToken', data.token);
-      // Y actualizamos el estado en App.jsx para que muestre el dashboard
       setToken(data.token);
 
     } catch (err) {
@@ -53,6 +54,21 @@ function LoginForm({ setToken }) {
             disabled={isLoading}
           />
         </div>
+
+        <div className="campo-formulario-checkbox" style={{flexDirection: 'row', alignItems: 'center', gap: '0.5rem', margin: '1rem 0', display: 'flex'}}>
+          <input
+            type="checkbox"
+            id="recordarme"
+            checked={recordarme}
+            onChange={(e) => setRecordarme(e.target.checked)}
+            disabled={isLoading}
+            style={{width: 'auto'}}
+          />
+          <label htmlFor="recordarme" style={{marginBottom: 0, cursor: 'pointer'}}>
+            Mantener sesión iniciada por 30 días
+          </label>
+        </div>
+
         <button type="submit" className="btn-guardar" disabled={isLoading}>
           {isLoading ? 'Entrando...' : 'Entrar'}
         </button>

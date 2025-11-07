@@ -1,10 +1,10 @@
 // src/App.jsx
 
 import { useState, useEffect, useMemo } from 'react';
-import { Toaster, toast } from 'react-hot-toast'; // Importamos Toaster y toast
+import { Toaster, toast } from 'react-hot-toast';
 import FormularioMedicamento from './components/FormularioMedicamento';
 import LoginForm from './components/LoginForm';
-import DashboardChart from './components/DashboardChart'; // Importamos el Gráfico
+import DashboardChart from './components/DashboardChart';
 
 function App() {
   const [medicamentos, setMedicamentos] = useState([]);
@@ -14,24 +14,17 @@ function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'nombre', direction: 'ascending' });
   const [historial, setHistorial] = useState([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
-
-  // --- Lógica de Autenticación ---
   const [token, setToken] = useState(localStorage.getItem('authToken'));
 
   const handleLogout = () => {
     setToken(null);
     localStorage.removeItem('authToken');
-    // Limpiamos los datos para que no se vean al volver a loguear
     setMedicamentos([]);
     setHistorial([]);
     toast.success('Sesión cerrada');
   };
-  // --- Fin Auth ---
 
-  // --- Lógica de Datos ---
   useEffect(() => {
-    
-    // Si no hay "pase", no hacemos nada.
     if (!token) {
       setIsLoading(false);
       setMedicamentos([]);
@@ -43,34 +36,21 @@ function App() {
       if (isInitial) setIsLoading(true);
       
       try {
-        const commonHeaders = {
-          'Authorization': `Bearer ${token}`
-        };
+        const commonHeaders = { 'Authorization': `Bearer ${token}` };
 
-        // Petición 1: Medicamentos
-        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { 
-          headers: commonHeaders 
-        });
+        const response = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { headers: commonHeaders });
 
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Token inválido o expirado');
-        }
+        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
         if (!response.ok) {
-          if (response.status >= 500 && response.status <= 599) {
-            throw new Error('El servidor está despertando... (Error 50x)');
-          }
+          if (response.status >= 500 && response.status <= 599) throw new Error('El servidor está despertando... (Error 50x)');
           throw new Error('La respuesta del servidor no fue OK');
         }
         
         const data = await response.json();
-        setMedicamentos(data); // Aquí vienen los datos CON 'diasRestantes'
+        setMedicamentos(data);
         setError(null);
 
-        // Petición 2: Historial
-        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { 
-          headers: commonHeaders 
-        });
-
+        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: commonHeaders });
         if (responseHistorial.ok) {
           const dataHistorial = await responseHistorial.json();
           setHistorial(dataHistorial);
@@ -78,10 +58,9 @@ function App() {
 
       } catch (err) {
         console.error("Error al buscar datos:", err);
-        
         if (err.message === 'Token inválido o expirado') {
           setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-          handleLogout(); // Forzamos el cierre de sesión
+          handleLogout();
         } else if (isInitial) {
           setError("Error al cargar datos. El servidor puede estar 'despertando'. Se reintentará automáticamente...");
         }
@@ -90,19 +69,11 @@ function App() {
       }
     };
 
-    fetchMedicamentos(true); // Carga inicial
-    
-    const intervalId = setInterval(() => {
-      console.log("Auto-actualizando lista de medicamentos...");
-      fetchMedicamentos(false);
-    }, 30000);
-
+    fetchMedicamentos(true);
+    const intervalId = setInterval(() => { fetchMedicamentos(false); }, 30000);
     return () => clearInterval(intervalId);
+  }, [token]);
 
-  }, [token]); // El 'useEffect' ahora DEPENDE del token
-
-  
-  // --- Funciones Helpers (Sin cambios) ---
   const getEstiloVencimiento = (fechaVencimiento) => {
     if (!fechaVencimiento) return 'vencimiento-normal';
     const hoy = new Date();
@@ -143,7 +114,6 @@ function App() {
     setSortConfig({ key, direction });
   };
 
-  // --- Funciones Handlers (Modificadas) ---
   const onFormularioSubmit = (medicamentoGuardado) => {
     if (medicamentoAEditar) {
       setMedicamentos(meds => meds.map(med => med._id === medicamentoGuardado._id ? medicamentoGuardado : med));
@@ -151,7 +121,9 @@ function App() {
     } else {
       setMedicamentos(meds => [...meds, medicamentoGuardado]);
     }
-    // La notificación "Toast" ahora se maneja dentro de FormularioMedicamento.jsx
+    fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setHistorial(data));
   };
 
   const handleEliminar = async (id) => {
@@ -160,22 +132,16 @@ function App() {
     try {
       const response = await fetch(`https://cuidar-med-backend.onrender.com/api/medicamentos/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Token inválido o expirado');
-        }
-        throw new Error(data.mensaje || 'Error al eliminar');
+        if (response.status === 401 || response.status === 403) throw new Error('Token inválido o expirado');
+        throw new Error('Error al eliminar');
       }
 
       setMedicamentos(meds => meds.filter(med => med._id !== id));
-      toast.success('Medicamento eliminado'); // Notificación Toast
+      toast.success('Medicamento eliminado');
 
     } catch (err) {
       console.error("Error al eliminar:", err);
@@ -183,31 +149,18 @@ function App() {
         setError("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
         handleLogout();
       } else {
-        setError(err.message);
-        toast.error(err.message); // Notificación Toast de error
+        toast.error(err.message);
       }
     }
   };
 
-  // --- RENDERIZADO (Con lógica de Login) ---
   return (
     <div className="App">
-      {/* Contenedor de Notificaciones Toast */}
-      <Toaster 
-        position="top-right"
-        reverseOrder={false}
-      />
-      
-      {/* --- LÓGICA DE VISTA --- */}
+      <Toaster position="top-right" />
 
-      {/* Si NO hay "pase" (token), mostramos el Login */}
       {!token ? (
-        
         <LoginForm setToken={setToken} />
-        
       ) : (
-        
-        /* Si SÍ hay "pase", mostramos la app completa */
         <>
           <div className="header-bar">
             <h1>Panel de Control de Medicamentos</h1>
@@ -218,121 +171,11 @@ function App() {
             {mostrarHistorial ? 'Ocultar Historial' : 'Mostrar Historial de Movimientos'}
           </button>
 
-          {/* Solo se muestra si no está cargando y no hay error */}
           {!isLoading && !error && (
             <DashboardChart data={sortedMedicamentos} />
           )}
 
-          {/* Lógica de Carga y Error */}
-          {isLoading && (
-            <div className="mensaje-feedback loading">
-              <p>Cargando medicamentos...</p>
-              <p>(El servidor gratuito puede tardar 30-40 segundos en despertar...)</p>
-            </div>
-          )}
-          {error && !isLoading && (
-            <div className="mensaje-feedback error">
-              <p>{error}</p>
-            </div>
-          )}
-
-          {/* Contenido Principal de la App */}
-          {!isLoading && (
-            <> 
-              <table>
-                <thead>
-                  <tr>
-                    <th>
-                      <button type="button" onClick={() => requestSort('nombre')}>
-                        Nombre 
-                        {sortConfig.key === 'nombre' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
-                      </button>
-                    </th>
-                    <th>Dosis</th>
-                    <th>
-                      <button type="button" onClick={() => requestSort('stockActual')}>
-                        Stock Actual
-                        {sortConfig.key === 'stockActual' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
-                      </button>
-                    </th>
-                    
-                    {/* --- NUEVA COLUMNA --- */}
-                    <th>
-                      <button type="button" onClick={() => requestSort('diasRestantes')}>
-                        Días Rest.
-                        {sortConfig.key === 'diasRestantes' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
-                      </button>
-                    </th>
-                    {/* --- FIN NUEVA COLUMNA --- */}
-
-                    <th>Stock Mínimo</th>
-                    <th>Horarios</th>
-                    <th>Vencimiento</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedMedicamentos.map(med => (
-                    <tr key={med._id}>
-                      <td>{med.nombre}</td>
-                      <td>{med.dosis}</td>
-                      <td style={{ 
-                        color: med.stockActual <= med.stockMinimo ? '#d9534f' : 'inherit',
-                        fontWeight: med.stockActual <= med.stockMinimo ? 'bold' : 'normal',
-                        textAlign: 'center'
-                      }}>
-                        {med.stockActual}
-                      </td>
-                      
-                      {/* --- NUEVA CELDA --- */}
-                      <td style={{
-                        color: med.diasRestantes <= 10 ? '#d9534f' : 'inherit',
-                        fontWeight: med.diasRestantes <= 10 ? 'bold' : 'normal',
-                        textAlign: 'center'
-                      }}>
-                        {med.diasRestantes}
-                      </td>
-                      {/* --- FIN NUEVA CELDA --- */}
-
-                      <td style={{ textAlign: 'center' }}>{med.stockMinimo}</td>
-                      <td>{med.horarios.join(', ')}</td>
-                      <td className={getEstiloVencimiento(med.fechaVencimiento)}>
-                        {med.fechaVencimiento 
-                          ? new Date(med.fechaVencimiento).toLocaleDateString('es-AR') 
-                          : 'N/A'
-                        }
-                      </td>
-                      <td>
-                        <button 
-                          className="btn-editar" 
-                          onClick={() => setMedicamentoAEditar(med)}
-                          disabled={!!medicamentoAEditar}
-                        >
-                          Editar
-                        </button>
-                        <button 
-                          className="btn-eliminar" 
-                          onClick={() => handleEliminar(med._id)}
-                          disabled={!!medicamentoAEditar}
-                        >
-                          Eliminar
-                        </button>
-                        {/* Aquí va el botón de Recargar Stock */}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <FormularioMedicamento
-                medicamentoActual={medicamentoAEditar}
-                onSubmitCompletado={onFormularioSubmit}
-                onCancelarEdicion={() => setMedicamentoAEditar(null)}
-              />
-            </>
-          )}
-
-          {/* Tabla de Historial */}
+          {/* --- [MOVIDO] Tabla de Historial (Ahora está arriba) --- */}
           {mostrarHistorial && !isLoading && (
             <div className="historial-container">
               <h2>Últimos Movimientos de Stock</h2>
@@ -360,6 +203,79 @@ function App() {
               </table>
             </div>
           )}
+          {/* ---------------------------------------------------- */}
+
+          {isLoading && (
+            <div className="mensaje-feedback loading">
+              <p>Cargando medicamentos...</p>
+              <p>(El servidor gratuito puede tardar 30-40 segundos en despertar...)</p>
+            </div>
+          )}
+          {error && !isLoading && (
+            <div className="mensaje-feedback error">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!isLoading && (
+            <> 
+              <table>
+                <thead>
+                  <tr>
+                    <th>
+                      <button type="button" onClick={() => requestSort('nombre')}>
+                        Nombre {sortConfig.key === 'nombre' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+                      </button>
+                    </th>
+                    <th>Dosis</th>
+                    <th>
+                      <button type="button" onClick={() => requestSort('stockActual')}>
+                        Stock Actual {sortConfig.key === 'stockActual' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+                      </button>
+                    </th>
+                    <th>
+                      <button type="button" onClick={() => requestSort('diasRestantes')}>
+                        Días Rest. {sortConfig.key === 'diasRestantes' ? (sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽') : ''}
+                      </button>
+                    </th>
+                    <th>Stock Mínimo</th>
+                    <th>Horarios</th>
+                    <th>Vencimiento</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedMedicamentos.map(med => (
+                    <tr key={med._id}>
+                      <td>{med.nombre}</td>
+                      <td>{med.dosis}</td>
+                      <td style={{ color: med.stockActual <= med.stockMinimo ? '#d9534f' : 'inherit', fontWeight: med.stockActual <= med.stockMinimo ? 'bold' : 'normal', textAlign: 'center' }}>
+                        {med.stockActual}
+                      </td>
+                      <td style={{ color: med.diasRestantes <= 10 ? '#d9534f' : 'inherit', fontWeight: med.diasRestantes <= 10 ? 'bold' : 'normal', textAlign: 'center' }}>
+                        {med.diasRestantes}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>{med.stockMinimo}</td>
+                      <td>{med.horarios.join(', ')}</td>
+                      <td className={getEstiloVencimiento(med.fechaVencimiento)}>
+                        {med.fechaVencimiento ? new Date(med.fechaVencimiento).toLocaleDateString('es-AR') : 'N/A'}
+                      </td>
+                      <td>
+                        <button className="btn-editar" onClick={() => setMedicamentoAEditar(med)} disabled={!!medicamentoAEditar}>Editar</button>
+                        <button className="btn-eliminar" onClick={() => handleEliminar(med._id)} disabled={!!medicamentoAEditar}>Eliminar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <FormularioMedicamento
+                medicamentoActual={medicamentoAEditar}
+                onSubmitCompletado={onFormularioSubmit}
+                onCancelarEdicion={() => setMedicamentoAEditar(null)}
+              />
+            </>
+          )}
         </>
       )}
     </div>
@@ -367,4 +283,3 @@ function App() {
 }
 
 export default App;
-

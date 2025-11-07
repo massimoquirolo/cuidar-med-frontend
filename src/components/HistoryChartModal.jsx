@@ -1,3 +1,4 @@
+// src/components/HistoryChartModal.jsx
 import React from 'react';
 import { 
   ResponsiveContainer, 
@@ -8,30 +9,26 @@ import {
   Tooltip, 
   Legend, 
   Bar,
-  Cell 
+  Cell
 } from 'recharts';
 
 function HistoryChartModal({ medicamento, historial, onClose }) {
 
-  // 1. Filtramos el historial completo para quedarnos solo con ESTE medicamento
-  const historialFiltrado = historial.filter(h => h.medicamentoNombre === medicamento.nombre);
-
-  // 2. Preparamos los datos para el gráfico (tomamos los últimos 20 movimientos)
-  const data = historialFiltrado
-    .slice(0, 20) // Solo los últimos 20 para que no se sature el gráfico
+  // Procesamos los datos del historial para el gráfico
+  const data = historial
+    .slice(0, 30) // Tomamos los últimos 30 movimientos
     .map(log => ({
+      // Formateamos la fecha para que sea legible en el eje X
       fecha: new Date(log.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
-      hora: new Date(log.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
       movimiento: log.movimiento,
       tipo: log.tipo,
-      fullDate: new Date(log.fecha).toLocaleString('es-AR') // Para el tooltip
+      // Guardamos la fecha completa para el tooltip
+      fechaCompleta: new Date(log.fecha).toLocaleString('es-AR')
     }))
-    .reverse(); // Para que aparezcan en orden cronológico de izquierda a derecha
+    .reverse(); // Lo damos vuelta para que muestre de más viejo a más nuevo
 
   return (
-    // Fondo oscuro que cierra el modal al hacer clic
     <div className="modal-backdrop" onClick={onClose}>
-      {/* Contenido del modal (evita que el clic se propague al fondo) */}
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         
         <div className="modal-header">
@@ -42,7 +39,7 @@ function HistoryChartModal({ medicamento, historial, onClose }) {
         <div className="modal-body">
           {data.length > 0 ? (
             <>
-              <p>Últimos {data.length} movimientos registrados.</p>
+              <p>Mostrando los últimos {data.length} movimientos.</p>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart
@@ -52,23 +49,37 @@ function HistoryChartModal({ medicamento, historial, onClose }) {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="fecha" fontSize={12} />
                     <YAxis allowDecimals={false} />
+                    
+                    {/* --- AQUÍ ESTÁ LA CORRECCIÓN --- */}
                     <Tooltip 
+                      // 1. LabelFormatter (para el título del tooltip)
                       labelFormatter={(label, payload) => {
+                        // 'label' es la fecha (e.g., "07/11")
+                        // 'payload' es el array de datos de la barra
+                        // Usamos la fecha completa que guardamos
                         if (payload && payload.length > 0) {
-                          return payload[0].payload.fullDate;
+                          return `Fecha: ${payload[0].payload.fechaCompleta}`;
                         }
                         return label;
                       }}
-                      formatter={(value, name, props) => [
-                        `${value > 0 ? '+' : ''}${value} unidades (${props.payload.tipo})`, 
-                        'Movimiento'
-                      ]}
+                      // 2. Formatter (para el contenido del tooltip)
+                      formatter={(value, name, props) => {
+                        // value = el número (e.g., 30 o -1)
+                        // props.payload = el objeto de datos de ESA barra
+                        const tipo = props.payload.tipo;
+                        const valor = value > 0 ? `+${value}` : value;
+                        // [Valor formateado], [Nombre de la leyenda]
+                        return [`${valor} unidades (${tipo})`, 'Movimiento'];
+                      }}
                     />
+                    {/* --- FIN DE LA CORRECCIÓN --- */}
+                    
                     <Legend />
-                    <Bar dataKey="movimiento" name="Cambio de Stock">
+                    <Bar dataKey="movimiento" name="Movimiento">
                       {data.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
+                          // El color depende del valor del movimiento
                           fill={entry.movimiento > 0 ? '#2ecc71' : '#d9534f'} 
                         />
                       ))}

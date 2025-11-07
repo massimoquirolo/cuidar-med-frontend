@@ -17,14 +17,18 @@ function HistoryChartModal({ medicamento, historial, onClose }) {
   // Procesamos los datos del historial para el gráfico
   const data = historial
     .slice(0, 30) // Tomamos los últimos 30 movimientos
-    .map(log => ({
-      // Formateamos la fecha para que sea legible en el eje X
-      fecha: new Date(log.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
-      movimiento: log.movimiento,
-      tipo: log.tipo,
-      // Guardamos la fecha completa para el tooltip
-      fechaCompleta: new Date(log.fecha).toLocaleString('es-AR')
-    }))
+    .map(log => {
+      const d = new Date(log.fecha);
+      return {
+        // [CAMBIO 1] Creamos una llave única para el eje X
+        ejeX: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) + 
+              ' ' + 
+              d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+        movimiento: log.movimiento,
+        tipo: log.tipo,
+        fechaCompleta: d.toLocaleString('es-AR')
+      }
+    })
     .reverse(); // Lo damos vuelta para que muestre de más viejo a más nuevo
 
   return (
@@ -40,46 +44,46 @@ function HistoryChartModal({ medicamento, historial, onClose }) {
           {data.length > 0 ? (
             <>
               <p>Mostrando los últimos {data.length} movimientos.</p>
-              <div style={{ width: '100%', height: 300 }}>
+              {/* [CAMBIO 2] Aumentamos la altura para dar espacio a los labels */}
+              <div style={{ width: '100%', height: 350 }}> 
                 <ResponsiveContainer>
                   <BarChart
                     data={data}
-                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                    // [CAMBIO 3] Damos más margen inferior para los labels inclinados
+                    margin={{ top: 20, right: 30, left: 0, bottom: 80 }} 
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" fontSize={12} />
+                    
+                    {/* [CAMBIO 4] Actualizamos el Eje X */}
+                    <XAxis 
+                      dataKey="ejeX" 
+                      fontSize={11} 
+                      angle={-45}       // Los inclinamos
+                      textAnchor="end"  // Alineamos al final
+                      interval={0}      // Forzamos a mostrar todos
+                    />
+                    
                     <YAxis allowDecimals={false} />
                     
-                    {/* --- AQUÍ ESTÁ LA CORRECCIÓN --- */}
                     <Tooltip 
-                      // 1. LabelFormatter (para el título del tooltip)
                       labelFormatter={(label, payload) => {
-                        // 'label' es la fecha (e.g., "07/11")
-                        // 'payload' es el array de datos de la barra
-                        // Usamos la fecha completa que guardamos
                         if (payload && payload.length > 0) {
                           return `Fecha: ${payload[0].payload.fechaCompleta}`;
                         }
                         return label;
                       }}
-                      // 2. Formatter (para el contenido del tooltip)
                       formatter={(value, name, props) => {
-                        // value = el número (e.g., 30 o -1)
-                        // props.payload = el objeto de datos de ESA barra
                         const tipo = props.payload.tipo;
                         const valor = value > 0 ? `+${value}` : value;
-                        // [Valor formateado], [Nombre de la leyenda]
                         return [`${valor} unidades (${tipo})`, 'Movimiento'];
                       }}
                     />
-                    {/* --- FIN DE LA CORRECCIÓN --- */}
                     
                     <Legend />
                     <Bar dataKey="movimiento" name="Movimiento">
                       {data.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          // El color depende del valor del movimiento
                           fill={entry.movimiento > 0 ? '#2ecc71' : '#d9534f'} 
                         />
                       ))}

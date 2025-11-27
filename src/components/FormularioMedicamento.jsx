@@ -80,8 +80,8 @@ function FormularioMedicamento({ medicamentoActual, onSubmitCompletado, onCancel
     const datosAEnviar = { ...formData, horarios: horarios, fechaVencimiento: fechaAEnviar };
 
     const url = modoEdicion 
-      ? `https://cuidar-med-backend.onrender.com/api/medicamentos/${medicamentoActual._id}`
-      : 'https://cuidar-med-backend.onrender.com/api/medicamentos';
+      ? `https://cuidar-med-backend.vercel.app/api/medicamentos/${medicamentoActual._id}`
+      : 'https://cuidar-med-backend.vercel.app/api/medicamentos';
       
     const method = modoEdicion ? 'PUT' : 'POST';
 

@@ -13,7 +13,7 @@ function LoginForm({ setToken }) {
     setIsLoading(true);
 
     try {      
-      const response = await fetch('https://cuidar-med-backend.onrender.com/api/login', {
+      const response = await fetch('https://cuidar-med-backend.vercel.app/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

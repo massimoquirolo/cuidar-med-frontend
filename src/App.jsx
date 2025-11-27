@@ -52,7 +52,7 @@ function App() {
         const commonHeaders = { 'Authorization': `Bearer ${token}` };
 
         // Petición 1: Medicamentos
-        const responseMeds = await fetch('https://cuidar-med-backend.onrender.com/api/medicamentos', { headers: commonHeaders });
+        const responseMeds = await fetch('https://cuidar-med-backend.vercel.app/api/medicamentos', { headers: commonHeaders });
 
         // Chequeo de seguridad: si el token es malo, cerramos sesión
         if (responseMeds.status === 401 || responseMeds.status === 403) {
@@ -70,7 +70,7 @@ function App() {
         setError(null); // Limpiamos errores si la carga fue exitosa
 
         // Petición 2: Historial
-        const responseHistorial = await fetch('https://cuidar-med-backend.onrender.com/api/historial', { headers: commonHeaders });
+        const responseHistorial = await fetch('https://cuidar-med-backend.vercel.app/api/historial', { headers: commonHeaders });
         if (responseHistorial.ok) {
           const dataHistorial = await responseHistorial.json();
           setHistorial(dataHistorial);
@@ -158,7 +158,7 @@ function App() {
     }
     
     // [IMPORTANTE] Refrescamos el historial después de un cambio
-    fetch('https://cuidar-med-backend.onrender.com/api/historial', { 
+    fetch('https://cuidar-med-backend.vercel.app/api/historial', { 
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -171,7 +171,7 @@ function App() {
     if (!window.confirm("¿Estás seguro de que quieres eliminar este medicamento?")) return;
 
     try {
-      const response = await fetch(`https://cuidar-med-backend.onrender.com/api/medicamentos/${id}`, {
+      const response = await fetch(`https://cuidar-med-backend.vercel.app/api/medicamentos/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
